@@ -107,20 +107,22 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
             '''
             --- login and registration ---
             - receive -
-            L followed by mail:pass - login details
-            R followed by mail - register details
+            L followed by mail:pass - login details - implemented
+            R followed by mail - register details - implemented
             
             - send -
-            EE - invalid email
-            EP - wrong password
-            EN - query returned null entry
-            ED - database query error
+            EE - invalid email - implemented
+            EL - login failed - implemented
+            ED - database query error - implemented
+            ER - already registered - implemented
             
-            SL - successful login
-            SR - successful registration
+            SL:ID:QN - successful login: database id: question number - implemented
+            SR - successful registration - implemented
             '''
             if data[0] == 'R':
-                split_data = data.split()
+                split_data = data[1:].split()
+                for i in range(0, len(split_data)):
+                    split_data[i] = split_data[i].lower()
                 email = None
                 for a in split_data:
                     if a[-14:len(a)] == "@eng.jfn.ac.lk":
@@ -128,9 +130,33 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
                 if email is None:
                     send(conn, 'EE')
                 else:
-                    cursor.execute("select email from players where ".format())
+                    cursor.execute("select email from players where email = {}".format(email))
+                    if len(cursor) == 0:  # for when the player is not registered
+                        while True:
+                            pin_gen = random.randint(10000, 99999)
+                            cursor.execute("select pin from players where pin = {}".format(pin_gen))
+                            if len(cursor) == 0:
+                                break
 
-            # elif data[0] == 'L':
+                        cursor.execute("insert into players (email, pin) values (\'{}\',\'{}\')".format(email, pin_gen))
+                        send_reg_mail(False, email, pin_gen)
+                        send(conn, 'SR')
+
+                    else:  # for when the player is already registered
+                        cursor.execute("select pin from players where email = {}".format(email))
+                        send_reg_mail(True, email, int(cursor[0]))
+                        send(conn, 'ER')
+
+            elif data[0] == 'L':
+                split_data = data[1:].split(':', 1)
+                cursor.execute("Select id, pin, puzzleid from players where email = {} and pin = {}".format(
+                    split_data[0].lower(), split_data[1]))
+                if len(cursor) == 0:
+                    send(conn, 'EL')
+                elif len(cursor) == 1:
+                    send(conn, "SL:{}:{}".format(cursor[0][0], cursor[0][2]))
+                else:
+                    send(conn, 'ED')
 
         except Exception as e:
             print("Exception occurred: \n", e, "\n broke and joined thread "
