@@ -12,10 +12,6 @@ import hashlib
 server_control = True
 thread_list = []
 
-# database control
-db = mysql.connector.connect(user='scav', password='1234567b', host='localhost', database='shinding')
-cursor = db.cursor()
-
 # mail details
 mail_sender = 'noreply.pandacodes@gmail.com'
 mail_authentication = 'euetvbwppwgeziag'
@@ -100,7 +96,16 @@ def send(conn: ssl.SSLSocket, string: str):
     conn.send(string.encode(encoding='utf-8', errors='ignore'))
 
 
+def distance_cal(lat1: float, lon1: float, lat2: float, lon2: float):
+    return ((lat1 - lat2)**2.0+(lon1 - lon2)**2)**0.5
+
+
 def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
+    # database control
+    db = mysql.connector.connect(user='scav', password='1234567b', host='localhost', database='shinding')
+    cursor = db.cursor()
+    db_id = None
+
     while True:
         try:
             data = conn.recvfrom(1024)[0].decode()
@@ -118,6 +123,18 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
             
             SL:ID:QN - successful login: database id: question number - implemented
             SR - successful registration - implemented
+            
+            --- scavenging and resource download ---
+            - receive -
+            P followed by id:puzzleid:latitude:longitude - submits answer to the puzzle
+            N - request puzzle
+            
+            - send -
+            EP - puzzle mismatch - implemented
+            ES - session mismatch - implemented
+            EA - wrong location/answer - implemented
+            
+            SP:QN - puzzle complete, next puzzle - implemented
             '''
             if data[0] == 'R':
                 split_data = data[1:].split()
@@ -155,8 +172,32 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
                     send(conn, 'EL')
                 elif len(cursor) == 1:
                     send(conn, "SL:{}:{}".format(cursor[0][0], cursor[0][2]))
+                    db_id = cursor[0][0]
                 else:
                     send(conn, 'ED')
+
+            elif data[0] == 'P':  # id:puzzleid:latitude:longitude
+                split_data = data[1:].split(':')
+
+                if split_data[0] != db_id:
+                    send(conn, 'ES')
+                    continue
+
+                cursor.execute("Select id, puzzleid from players where id = {}".format(split_data[0]))
+
+                if cursor[1] != db_id:
+                    send(conn, 'EM')
+                    continue
+
+                puzzle_id = cursor[1]
+
+                cursor.execute("Select lat, lon, err from puzzles where puzzleid = {}".format(puzzle_id))
+
+                if cursor[2] >= distance_cal(float(split_data[2]), float(split_data[3]), cursor[0], cursor[1]):
+                    send(conn, "SP:{}".format(puzzle_id + 1))
+                    cursor.execute("update players set puzzleid = {} where id = {}".format(puzzle_id+1, db_id))
+                else:
+                    send(conn, 'EA')
 
         except Exception as e:
             print("Exception occurred: \n", e, "\n broke and joined thread "
