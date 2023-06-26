@@ -1,7 +1,4 @@
+*.*
 
-*.pem
-*.exe
-*.png
-*.xml
-*.iml
-*.cfg
+!*.py
+!*.dart

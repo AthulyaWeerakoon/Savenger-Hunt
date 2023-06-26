@@ -128,6 +128,7 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
             - receive -
             P followed by id:puzzleid:latitude:longitude - submits answer to the puzzle
             N - request puzzle
+            I:
             
             - send -
             EP - puzzle mismatch - implemented
