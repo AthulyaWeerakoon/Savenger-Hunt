@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:js_util';
+
 import 'package:flutter/material.dart';
 
 void main() {
@@ -5,7 +8,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key,});
 
   // This widget is the root of your application.
   @override
@@ -96,7 +99,7 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            TextField(
+            const TextField(
               decoration: InputDecoration(
                 border: OutlineInputBorder(),
                 hintText: 'Enter a search term',

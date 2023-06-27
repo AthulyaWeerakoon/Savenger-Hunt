@@ -2,15 +2,14 @@ import socket
 import ssl
 import threading
 import mysql.connector
-from mysql.connector import errorcode
 from email.message import EmailMessage
 import random
 import smtplib
-import hashlib
 
 # server control
 server_control = True
 thread_list = []
+joined_threads = []
 
 # mail details
 mail_sender = 'noreply.pandacodes@gmail.com'
@@ -20,7 +19,7 @@ mail_authentication = 'euetvbwppwgeziag'
 mail_context = ssl.create_default_context()
 
 # ssl setup for server
-address = ("192.168.1.209", 443)
+address = ("127.0.0.1", 443)
 context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
 context.load_cert_chain('cert.pem', 'key.pem')
 
@@ -37,8 +36,13 @@ def listen():
         conn = None
         conn, conn_address = ssl_sock.accept()
         if conn is not None:
-            thread_list.append(threading.Thread(target=connection_thread, args=(conn, len(thread_list))))
-            thread_list[-1].start()
+            new_thread = threading.Thread(target=connection_thread, args=(conn, len(thread_list)))
+            new_thread.start()
+            if len(joined_threads) != 0:
+                thread_list[joined_threads[0]] = new_thread
+                joined_threads.pop(0)
+            else:
+                thread_list.append(new_thread)
 
 
 def send_reg_mail(is_registred: bool, to: str, pin: int):
@@ -79,7 +83,7 @@ Welcome Scavenger!,
 10. TFJGTEZGUg==
 11. U29tZSBwdXp6bGVzIG1heSByZXF1aXJlIHlvdSB0byB2aXNpdCBvbGRlciBwdXp6bGVzIGluIG9yZGVyIHRvIHNvbHZlIDs+
         
-\tAnd keep in mind contestant, it's all about the journey, so don't forget to have fun :D
+\tAnd keep in mind contestant, it's all about the journey, never about the destination, so don't forget to have fun :D
         
         
 {}
@@ -204,4 +208,8 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
             print("Exception occurred: \n", e, "\n broke and joined thread "
                   , thread_ind, " handling ", conn.getsockname())
             thread_list[thread_ind].join()
+            joined_threads.append(thread_ind)
             break
+
+
+listen()
