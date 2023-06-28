@@ -5,7 +5,7 @@ user = mysql.connector.connect(user='scav', password='1234567b', host='localhost
 cursor = user.cursor()
 
 cursor.execute("create table players (id int not null auto_increment, email varchar(22) not null, "
-               "pin int not null, puzzleid int not null, primary key (id));")
+               "pin int not null, puzzleid int not null, islogged bit(1) default 0, primary key (id));")
 cursor.execute("create table puzzles ( puzzleid int not null, puzzle varchar(1000) not null, "
                "img varchar(255), imgtype varchar(1), lon float(10) not null, lat float(10)  not null, err float(10) "
                "not null, primary key(puzzleid));")
