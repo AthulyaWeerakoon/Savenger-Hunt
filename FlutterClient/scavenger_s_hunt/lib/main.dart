@@ -1,10 +1,53 @@
 import 'dart:io';
-import 'dart:js_util';
 
 import 'package:flutter/material.dart';
+// import 'package:fluttertoast/fluttertoast.dart';
 
 void main() {
   runApp(const MyApp());
+}
+
+class SessionConnection{
+  final SecurityContext _context = SecurityContext(withTrustedRoots: true);
+  late SecureSocket _sock;
+  late String _key;
+
+  SessionConnection() {
+    _context.setTrustedCertificates('assets/cert/cert.pem');
+    //try{
+    SecureSocket.connect('127.0.0.1', 443, context: _context, onBadCertificate: (X509Certificate c){
+    print("Certificate WARNING: ${c.issuer}:${c.subject}");
+    return true;
+    }).then((SecureSocket ss) => _sock = ss)
+    .catchError((e) {
+      print("Error: failed connectiong to remote server");
+      exit(0);
+    });
+      
+    //} catch (err) {
+      /*
+      Fluttertoast.showToast(
+        msg: "Couldn't connect to Scavenger hunt's listen server",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.CENTER,
+      );
+      */
+      //print(err);
+      //exit(0);
+    //}
+  }
+
+  void setKey(String key){
+    _key = key;
+  }
+
+  String getKey(){
+    return _key;
+  }
+
+  Future<SecureSocket> getSocket() async {
+    return await _sock;
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -31,101 +74,19 @@ class MyApp extends StatelessWidget {
         //
         // This works for code too, not just values: Most code changes can be
         // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const SignupPage(),
-      // home: const MyHomePage(),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const TextField(
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Enter a search term',
-              ),
-            ),
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
+      home: SignupPage(
+        session: SessionConnection(),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
 
 class SignupPage extends StatefulWidget {
-  const SignupPage({super.key});
+  final SessionConnection session;
+
+  const SignupPage({super.key, required this.session});
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -141,10 +102,9 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPage extends State<SignupPage> {
-
-  void _registerPopup() {
-
-  }
+  TextEditingController email = TextEditingController();
+  TextEditingController otp = TextEditingController();
+  TextEditingController regMail = TextEditingController();
   /*
   void _incrementCounter() {
     setState(() {
@@ -156,6 +116,8 @@ class _SignupPage extends State<SignupPage> {
     });
   }
   */
+  // Widget listen() {}
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -193,20 +155,26 @@ class _SignupPage extends State<SignupPage> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(10.0, 15.0, 50.0, 0),
                     child: TextFormField(
+                      controller: email,
                       style: const TextStyle(
                         fontFamily: 'Arial',
-                        fontSize: 16,
+                        fontSize: 15,
                         color: Colors.black,
                       ),
                       decoration: InputDecoration(
-                        border: const UnderlineInputBorder(),
+                        enabledBorder: const UnderlineInputBorder(),
+                        focusedBorder: const UnderlineInputBorder(
+                          borderSide: BorderSide(color: Color.fromRGBO(249, 166, 145, 1),),
+                        ),
+                        focusColor: const Color.fromRGBO(249, 166, 145, 1),
                         label: RichText(
                           text: const TextSpan(
                             text: "Enter university email address",
                             style: TextStyle(
                               fontFamily: 'Arial',
-                              fontSize: 16,
+                              fontSize: 15,
                               color: Color.fromARGB(127, 0, 0, 0),
+                              decorationColor: Color.fromRGBO(249, 166, 145, 1),
                             )
                           )
                         ),
@@ -216,14 +184,19 @@ class _SignupPage extends State<SignupPage> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(10.0, 15.0, 50.0, 0),
                     child: TextFormField(
+                      controller: otp,
                       decoration: InputDecoration(
-                        border: const UnderlineInputBorder(),
+                        enabledBorder: const UnderlineInputBorder(),
+                        focusedBorder: const UnderlineInputBorder(
+                          borderSide: BorderSide(color: Color.fromRGBO(249, 166, 145, 1),)
+                        ),
+                        focusColor: const Color.fromRGBO(249, 166, 145, 1),
                         label: RichText(
                           text: const TextSpan(
-                            text: "Enter PIN number",
+                            text: "Enter OTP code",
                             style: TextStyle(
                               fontFamily: 'Arial',
-                              fontSize: 16,
+                              fontSize: 15,
                               color: Color.fromARGB(127, 0, 0, 0),
                             )
                           )
@@ -260,17 +233,29 @@ class _SignupPage extends State<SignupPage> {
                                     ),
                                     Padding(padding: const EdgeInsets.fromLTRB(50.0, 15.0, 50.0, 0.0),
                                       child: TextFormField(
+                                        controller: regMail,
                                         decoration: const InputDecoration(
                                           border: UnderlineInputBorder(),
                                           label: Center(
                                             child: Text("Enter your email",
                                               style: TextStyle(
                                                 fontFamily: 'Arial',
-                                                fontSize: 16,
+                                                fontSize: 15,
                                                 color: Color.fromARGB(127, 0, 0, 0),
                                               ),
                                             ),
                                           )
+                                        ),
+                                      ),
+                                    ),
+                                    Padding(padding: const EdgeInsets.all(25.0),
+                                      child:ElevatedButton(
+                                        onPressed: () { },
+                                        child: const Text(
+                                          'Renew OTP',
+                                          style: TextStyle(
+                                            color: Color.fromRGBO(185, 105, 85, 1),
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -288,7 +273,7 @@ class _SignupPage extends State<SignupPage> {
                               text: "Haven't registered yet? Tap ",
                               style: TextStyle(
                                 color: Colors.black,
-                                fontSize: 15,
+                                fontSize: 12,
                                 fontFamily: 'Arial',
                               )
                             ),
@@ -300,7 +285,7 @@ class _SignupPage extends State<SignupPage> {
                                 decoration: TextDecoration.underline,
                                 decorationColor: Color.fromRGBO(249, 166, 145, 1),
                                 decorationStyle: TextDecorationStyle.solid,
-                                fontSize: 15,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               )
                             ),
@@ -308,7 +293,7 @@ class _SignupPage extends State<SignupPage> {
                               text: " to register :)",
                               style: TextStyle(
                                 color: Colors.black,
-                                fontSize: 15,
+                                fontSize: 12,
                                 fontFamily: 'Arial',
                               )
                             ),
@@ -321,7 +306,7 @@ class _SignupPage extends State<SignupPage> {
               ),
             ),
             Container(
-              width: 61,
+              width: 42,
               decoration: const BoxDecoration(
                 border: Border(
                   right: BorderSide(width: 0.0, color: Color.fromARGB(255, 253, 224, 217))
@@ -329,16 +314,17 @@ class _SignupPage extends State<SignupPage> {
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: <Widget>[
                   Image.asset(
                     'assets/ui/reg_next.png',
-                    height: 300,
+                    height: 200,
                   )
                 ],
               ),
             ),
             Container(
-              width: 50,
+              width: 25,
               decoration: const BoxDecoration(
                 color: Color.fromARGB(255, 253, 224, 217),
                 border: Border(
