@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -105,6 +107,95 @@ class _SignupPage extends State<SignupPage> {
   TextEditingController email = TextEditingController();
   TextEditingController otp = TextEditingController();
   TextEditingController regMail = TextEditingController();
+
+  late FocusNode focusOTP;
+
+  @override
+  void initState() {
+    super.initState();
+
+    focusOTP = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    focusOTP.dispose();
+
+    super.dispose();
+  }
+
+  void sendRecv(String code){
+    String data;
+    String recv = "";
+
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        backgroundColor: const Color.fromRGBO(0, 0, 0, 0),
+        content: Image.asset(
+          "assets/ui/loading.gif",
+          height: 100,
+          width: 100,
+        ),
+      )
+    );
+    widget.session.getSocket().then(
+      (SecureSocket sock) {
+        if(code == 'R') {
+          if(regMail.text.isNotEmpty) {
+            data = regMail.text;
+            sock.write('R$data');
+          }
+          else { /* toast Enter your UoJ email address */ }
+        }
+        else if(code == 'G') {
+          if(email.text.isNotEmpty && otp.text.isNotEmpty) {
+            sock.write('G${regMail.text}:${email.text}');
+          }
+          else{
+            // toast Fill signup form details
+          }
+        }
+        final subscription = sock.listen(null);
+        subscription.onData((buffer) {
+          recv = String.fromCharCodes(buffer).trim();
+          print(recv);
+          if(recv == 'EE'){
+            // toast Invalid email address
+          }
+          else if(recv == 'ER'){
+            // toast Sent renewed OTP to your email
+            email.text = regMail.text;
+          }
+          else if(recv == 'EO'){
+            // toast Incorrect OTP
+          }
+          else if(recv == 'EX'){
+            // toast OTP expired
+          }
+          else if(recv == 'E1'){
+            // toast Another device has already logged into this account
+          }
+          else if(recv == 'ET'){
+            // toast Unable to login, re-request an OTP and try to log in again
+          }
+          else if(recv.startsWith('ST')){
+            // toask Token receieved
+            widget.session.setKey(recv.substring(3));
+          }
+          else{
+            
+          }
+          Navigator.of(context).pop();
+          subscription.cancel();
+        });
+      },
+      onError: (error){
+        print(error);
+      }
+    );
+  }
   /*
   void _incrementCounter() {
     setState(() {
@@ -179,11 +270,13 @@ class _SignupPage extends State<SignupPage> {
                           )
                         ),
                       ),
+                      onFieldSubmitted: (value) => focusOTP.requestFocus(),
                     ),
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(10.0, 15.0, 50.0, 0),
                     child: TextFormField(
+                      focusNode: focusOTP,
                       controller: otp,
                       decoration: InputDecoration(
                         enabledBorder: const UnderlineInputBorder(),
@@ -202,6 +295,7 @@ class _SignupPage extends State<SignupPage> {
                           )
                         ),
                       ),
+                      onFieldSubmitted: (value) => sendRecv('G'),
                     ),
                   ),
                   Padding(
@@ -246,11 +340,25 @@ class _SignupPage extends State<SignupPage> {
                                             ),
                                           )
                                         ),
+                                        onFieldSubmitted: (value) => sendRecv('R'),
                                       ),
                                     ),
                                     Padding(padding: const EdgeInsets.all(25.0),
                                       child:ElevatedButton(
-                                        onPressed: () { },
+                                        onPressed: () => sendRecv('R'),
+                                        style: ButtonStyle(
+                                          overlayColor: MaterialStateProperty.resolveWith<Color?>(
+                                            (Set<MaterialState> states) {
+                                              if (states.contains(MaterialState.hovered)) {
+                                                return const Color.fromARGB(255, 255, 230, 230);
+                                              }
+                                              if (states.contains(MaterialState.pressed)) {
+                                                return const Color.fromRGBO(203, 154, 142, 1);
+                                              }
+                                              return null; // Use the component's default.
+                                            },
+                                          ),
+                                        ),
                                         child: const Text(
                                           'Renew OTP',
                                           style: TextStyle(

@@ -162,8 +162,9 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
             EX - otp expired
             E1 - already logged in 
             ET - wrong token
+            EN - not registered
             
-            SL:QN:ID - successful login: question number
+            SL:QN - successful login: question number
             SR - successful registration
             ST:Token - successful registration, sending token
             
@@ -219,20 +220,29 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
                     send(conn, 'EX')
                     continue
 
-                cursor.execute("select id, email, puzzleid, islogged from players where email = %s", (split_data[0], ))
+                cursor.execute("select id, email, puzzleid, islogged from players where email = %s", (split_data[0],))
                 db_data = cursor.fetchall()
                 token: str = secrets.token_urlsafe(512)
                 cursor.execute("update players set pass_hash = %s where id = %s",
-                               (hashlib.blake2b(token.encode()).hexdigest(), db_data[0][0]))
+                               (hashlib.blake2b((token + str(db_data[0][0])).encode()).hexdigest(), db_data[0][0]))
                 send(conn, 'ST:' + token)
 
             elif data[0] == 'L':  # email:token
                 split_data = data[1:].split(':', 1)
-                cursor.execute("select id, puzzleid, pass_hash, islogged from players where email = %s", (split_data[0], ))
+                cursor.execute("select id, puzzleid, pass_hash, islogged from players where email = %s",
+                               (split_data[0],))
                 db_data = cursor.fetchall()
+
                 if len(db_data) == 0:
+                    send(conn, 'EN')
+                    continue
+
+                pass_hash = hashlib.blake2b((split_data[1] + str(db_data[0][0])).encode()).hexdigest()
+                if db_data[0][2] != pass_hash:
                     send(conn, 'ET')
-                elif len(db_data) == 1:
+                    continue
+
+                if len(db_data) == 1:
                     if db_data[0][3] == 1:
                         send(conn, "E1")
                     else:
@@ -274,8 +284,8 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
             db.commit()
 
         except Exception as e:
-            log("Exception occurred: \n" + e.__str__() + "\n broke and joined thread "
-                + str(thread_ind) + " handling " + conn.getsockname())
+            print("Exception occurred: \n", e.__str__(), "\n broke and joined thread ",
+                  thread_ind, " handling ", conn.getsockname())
             if db_id is not None:
                 cursor.execute("update players set islogged = 0 where id = %s", (db_id,))
                 db.commit()
