@@ -17,7 +17,8 @@ class SessionConnection{
   SessionConnection() {
     _context.setTrustedCertificates('assets/cert/cert.pem');
     //try{
-    SecureSocket.connect('127.0.0.1', 443, context: _context, onBadCertificate: (X509Certificate c){
+    SecureSocket.connect('127.0.0.1', 443, timeout: const Duration(seconds: 1, milliseconds: 500), context: _context,
+    onBadCertificate: (X509Certificate c){
     print("Certificate WARNING: ${c.issuer}:${c.subject}");
     return true;
     }).then((SecureSocket ss) => _sock = ss)
@@ -47,9 +48,11 @@ class SessionConnection{
     return _key;
   }
 
-  Future<SecureSocket> getSocket() async {
-    return await _sock;
-  }
+  Future<SecureSocket> getSocket() => 
+    Future.delayed(
+      const Duration(seconds: 2),
+      () => _sock,
+    );
 }
 
 class MyApp extends StatelessWidget {
@@ -107,7 +110,8 @@ class _SignupPage extends State<SignupPage> {
   TextEditingController email = TextEditingController();
   TextEditingController otp = TextEditingController();
   TextEditingController regMail = TextEditingController();
-
+  
+  late StreamSubscription subscription;
   late FocusNode focusOTP;
 
   @override
@@ -115,56 +119,21 @@ class _SignupPage extends State<SignupPage> {
     super.initState();
 
     focusOTP = FocusNode();
-  }
-
-  @override
-  void dispose() {
-    focusOTP.dispose();
-
-    super.dispose();
-  }
-
-  void sendRecv(String code){
-    String data;
+    
     String recv = "";
-
-    showDialog(
-      barrierDismissible: false,
-      context: context,
-      builder: (BuildContext context) => AlertDialog(
-        backgroundColor: const Color.fromRGBO(0, 0, 0, 0),
-        content: Image.asset(
-          "assets/ui/loading.gif",
-          height: 100,
-          width: 100,
-        ),
-      )
-    );
     widget.session.getSocket().then(
       (SecureSocket sock) {
-        if(code == 'R') {
-          if(regMail.text.isNotEmpty) {
-            data = regMail.text;
-            sock.write('R$data');
-          }
-          else { /* toast Enter your UoJ email address */ }
-        }
-        else if(code == 'G') {
-          if(email.text.isNotEmpty && otp.text.isNotEmpty) {
-            sock.write('G${regMail.text}:${email.text}');
-          }
-          else{
-            // toast Fill signup form details
-          }
-        }
-        final subscription = sock.listen(null);
-        subscription.onData((buffer) {
+        subscription = sock.listen((buffer) {
           recv = String.fromCharCodes(buffer).trim();
           print(recv);
           if(recv == 'EE'){
             // toast Invalid email address
           }
           else if(recv == 'ER'){
+            // toast Sent renewed OTP to your email
+            email.text = regMail.text;
+          }
+          else if(recv == 'SR'){
             // toast Sent renewed OTP to your email
             email.text = regMail.text;
           }
@@ -188,8 +157,58 @@ class _SignupPage extends State<SignupPage> {
             
           }
           Navigator.of(context).pop();
-          subscription.cancel();
         });
+      },
+      onError: (error){
+        print(error);
+      }
+    );
+    
+    
+  }
+
+  @override
+  void dispose() {
+    focusOTP.dispose();
+    subscription.cancel();
+
+    super.dispose();
+  }
+
+  void sendRecv(String code){
+    String data;
+
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        backgroundColor: const Color.fromRGBO(0, 0, 0, 0),
+        content: Image.asset(
+          "assets/ui/loading.gif",
+          height: 100,
+          width: 100,
+        ),
+      )
+    );
+
+    widget.session.getSocket().then(
+      (SecureSocket sock) {
+        if(code == 'R') {
+          if(regMail.text.isNotEmpty) {
+            data = regMail.text;
+            sock.write('R$data');
+          }
+          else { /* toast Enter your UoJ email address */ }
+        }
+        else if(code == 'G') {
+          if(email.text.isNotEmpty && otp.text.isNotEmpty) {
+            sock.write('G${email.text}:${otp.text}');
+          }
+          else{
+            // toast Fill signup form details
+          }
+        }
+        
       },
       onError: (error){
         print(error);
@@ -207,7 +226,6 @@ class _SignupPage extends State<SignupPage> {
     });
   }
   */
-  // Widget listen() {}
 
   @override
   Widget build(BuildContext context) {
