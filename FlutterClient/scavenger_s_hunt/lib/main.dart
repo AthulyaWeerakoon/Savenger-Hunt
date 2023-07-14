@@ -3,13 +3,14 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 // import 'package:fluttertoast/fluttertoast.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
-class SessionConnection{
+class SessionConnection {
   final SecurityContext _context = SecurityContext(withTrustedRoots: true);
   late SecureSocket _sock;
   late String _key;
@@ -26,7 +27,7 @@ class SessionConnection{
       print("Error: failed connectiong to remote server");
       exit(0);
     });
-      
+
     //} catch (err) {
       /*
       Fluttertoast.showToast(
@@ -40,12 +41,62 @@ class SessionConnection{
     //}
   }
 
+  Future<String> get _localPath async {
+    Directory directory = await getApplicationDocumentsDirectory();
+    
+    return directory.path;
+  }
+
+  Future<File> get _localFile async {
+    final path = await _localPath;
+    return File('$path/user_data.txt');
+  }
+
+  Future<File> writeFile(String data) async {
+    final file = await _localFile;
+
+    return file.writeAsString(data);
+  }
+
+  Future<List<String>> get _fileData async {
+    try{
+      final file = await _localFile;
+
+      final contents = await file.readAsString();
+
+      return contents.split(' ');
+    } catch(e) {
+      writeFile(
+        'key: lastQ: '
+        );
+      return _fileData;
+    }
+  }
+
+  Future<String> readKey() async {
+    final data = await _fileData;
+    final key = data[0].split(':')[1];
+
+    if(key == '') { return '0'; }
+    else { return key; }
+  }
+
+  Future<bool> get _dataRetreieved async {
+    final key = await readKey();
+    if (key == '0') { return false; }
+    else { return true; }
+  }
+
   void setKey(String key){
     _key = key;
   }
 
   String getKey(){
     return _key;
+  }
+
+  Future<bool> getDataRetreived() async {
+    return await _dataRetreieved;
   }
 
   Future<SecureSocket> getSocket() => 
@@ -175,9 +226,7 @@ class _SignupPage extends State<SignupPage> {
     super.dispose();
   }
 
-  void sendRecv(String code){
-    String data;
-
+  void showLoading(){
     showDialog(
       barrierDismissible: false,
       context: context,
@@ -190,6 +239,12 @@ class _SignupPage extends State<SignupPage> {
         ),
       )
     );
+  }
+
+  void sendRecv(String code){
+    String data;
+
+    showLoading();
 
     widget.session.getSocket().then(
       (SecureSocket sock) {
