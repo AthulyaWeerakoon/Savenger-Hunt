@@ -297,8 +297,9 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
                 """
                 split_data = data.split(":")
                 q_n = int(split_data[0][1:])
+                print(last_q, q_n)
 
-                if q_n > last_q + 1:
+                if q_n > last_q:
                     send(conn, 'EP')
                     continue
 
@@ -321,13 +322,19 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
 
                 elif split_data[1] == 'I':
                     try:
+                        send(conn, 'RI')
+                        response = conn.recv(SIZE).decode()
+
+                        if response != 'SI':
+                            continue
+
                         send_file(conn, "assets/Q{}/image.png".format(q_n), SIZE)
-                        send(conn, 'D')
+
                     except FileNotFoundError:
                         send(conn, 'EB')
 
-            else:
-                send(conn, 'X')
+                else:
+                    send(conn, 'X')
 
             else:
                 send(conn, 'X')

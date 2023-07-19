@@ -12,11 +12,12 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0) as sock:
         print(ssock.version())
         while True:
             string = input('Enter data to send: ')
-            if string[0] == 'N':
-                split_string = string[1:].split(':')
-                if split_string != 'P' and split_string != 'T':
-                    
-
             ssock.send(string.encode(encoding='utf-8', errors='ignore'))
-            print(ssock.recv(1024).decode())
+
+            response = ssock.recv(1024).decode()
+            print(response)
+
+            if response == 'RI':
+                ssock.send('SI'.encode())
+                recv_file(ssock, "image.png", 1024)
 
