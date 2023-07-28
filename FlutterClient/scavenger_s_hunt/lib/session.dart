@@ -4,7 +4,6 @@ import 'package:path_provider/path_provider.dart';
 class SessionConnection {
   final SecurityContext _context = SecurityContext(withTrustedRoots: true);
   late SecureSocket _sock;
-  late String _key;
 
   SessionConnection() {
     _context.setTrustedCertificates('assets/cert/cert.pem');
@@ -57,7 +56,7 @@ class SessionConnection {
       return contents.split(' ');
     } catch(e) {
       file.writeAsString(
-        'key: lastQ: '
+        'mail: key: lastQ: '
         );
       return _fileData;
     }
@@ -65,28 +64,61 @@ class SessionConnection {
 
   Future<String> readKey() async {
     final data = await _fileData;
-    final key = data[0].split(':')[1];
+    final key = data[1].split(':')[1];
 
     if(key == '') { return '0'; }
     else { return key; }
   }
 
-  Future<bool> get _dataRetreieved async {
+  Future<String> readMail() async {
+    final data = await _fileData;
+    final mail = data[0].split(':')[1];
+
+    if(mail == '') { return '0'; }
+    else { return mail; }
+  }
+
+  Future<bool> get _keyRetreieved async {
     final key = await readKey();
     if (key == '0') { return false; }
     else { return true; }
   }
 
-  void setKey(String key){
-    _key = key;
+  Future<List<String>> getMailKeyPair() async {
+    return [await readMail(), await readKey()];
   }
 
-  String getKey(){
-    return _key;
+  Future<File> setMailKeyPair(String mail, String key) async {
+    final file = await _localFile;
+    final contents = await file.readAsString();
+
+    final int mailEndsAt = contents.indexOf(' ');
+    final int keyEndsAt = contents.substring(mailEndsAt + 1).indexOf(' ') + mailEndsAt + 2;
+    
+    return await file.writeAsString("mail:$mail key:$key ${contents.substring(keyEndsAt)}");
   }
 
-  Future<bool> getDataRetreived() async {
-    return await _dataRetreieved;
+  Future<int> getLastQ() async {
+    final file = await _localFile;
+    final contents = await file.readAsString();
+
+    final List<String> isolatedData = contents.split(' ');
+    return int.parse(isolatedData[2].split(':')[1]);
+  }
+
+  Future<File> setLastQ(int lastQ) async {
+    final file = await _localFile;
+    final contents = await file.readAsString();
+    print(contents);
+
+    final List<String> splitString = contents.split('lastQ:');
+    final String postQsplit = splitString[1].split(' ')[1];
+
+    return await file.writeAsString("${splitString[0]}lastQ:$lastQ $postQsplit");
+  }
+
+  Future<bool> getKeyRetreived() async {
+    return await _keyRetreieved;
   }
 
   Future<SecureSocket> getSocket() => 

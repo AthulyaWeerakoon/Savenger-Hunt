@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:scavenger_s_hunt/main.dart';
 import 'package:scavenger_s_hunt/session.dart';
 
 class SignupPage extends StatefulWidget {
@@ -28,6 +29,7 @@ class _SignupPage extends State<SignupPage> {
   TextEditingController email = TextEditingController();
   TextEditingController otp = TextEditingController();
   TextEditingController regMail = TextEditingController();
+  bool logged = false;
   
   late StreamSubscription subscription;
   late FocusNode focusOTP;
@@ -67,9 +69,30 @@ class _SignupPage extends State<SignupPage> {
           else if(recv == 'ET'){
             // toast Unable to login, re-request an OTP and try to log in again
           }
+          else if(recv == 'EF'){
+            // toast Connecting to revceiver SMTP failed, check the mail address and try again
+          }
           else if(recv.startsWith('ST')){
             // toask Token receieved
-            widget.session.setKey(recv.substring(3));
+            widget.session.setMailKeyPair(email.text ,recv.substring(3));
+          }
+          else if(recv == 'EN'){
+            // toast Stored email address corrupted
+          }
+          else if(recv == 'ET'){
+            // toast Stored security toke corrupted, try signing up again
+          }
+          else if(recv == 'EH'){
+            // toast Already logged in from server-side
+          }
+          else if(recv == 'E1'){
+            // toast Another device has already connected to this session
+            exit(0);
+          }
+          else if(recv.startsWith('SL')){
+            // toask Logged in successfully
+            widget.session.setLastQ(int.parse(recv.split(":")[1]));
+            Navigator.of(context).push(routeToNavigation(widget.session));
           }
           else{
             
@@ -91,6 +114,10 @@ class _SignupPage extends State<SignupPage> {
     subscription.cancel();
 
     super.dispose();
+  }
+
+  void login(){
+    
   }
 
   void showLoading(){
@@ -134,6 +161,18 @@ class _SignupPage extends State<SignupPage> {
       },
       onError: (error){
         print(error);
+      }
+    );
+  }
+
+  void loginToNavigate(){
+    widget.session.getSocket().then(
+      (SecureSocket sock) {
+      widget.session.getMailKeyPair().then(
+        (List<String> pair) {
+          sock.write('L${pair[0]}:${pair[1]}');
+        }
+      );
       }
     );
   }
@@ -360,24 +399,30 @@ class _SignupPage extends State<SignupPage> {
                   right: BorderSide(width: 0.0, color: Color.fromARGB(255, 253, 224, 217))
                 )
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: <Widget>[
-                  Image.asset(
-                    'assets/ui/reg_next.png',
-                    height: 200,
-                  )
-                ],
+              child: GestureDetector(
+                  onTap: loginToNavigate,
+                  child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: <Widget>[
+                    Image.asset(
+                      'assets/ui/reg_next.png',
+                      height: 200,
+                    )
+                  ],
+                ),
               ),
             ),
-            Container(
-              width: 25,
-              decoration: const BoxDecoration(
-                color: Color.fromARGB(255, 253, 224, 217),
-                border: Border(
-                  left: BorderSide(width: 0.0, color: Color.fromARGB(255, 253, 224, 217))
-                )
+            GestureDetector(
+              onTap: loginToNavigate,
+              child: Container(
+                width: 25,
+                decoration: const BoxDecoration(
+                  color: Color.fromARGB(255, 253, 224, 217),
+                  border: Border(
+                    left: BorderSide(width: 0.0, color: Color.fromARGB(255, 253, 224, 217))
+                  )
+                ),
               ),
             )
           ]

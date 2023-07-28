@@ -1,6 +1,7 @@
 import ssl
 import os
 from tqdm import tqdm
+import mysql.connector
 
 
 def send_file(conn: ssl.SSLSocket, path: str, size: int = 1024):

@@ -33,6 +33,8 @@ context.load_cert_chain('cert.pem', 'key.pem')
 db_init = mysql.connector.connect(user='scav', password='1234567b', host='localhost', database='scavengerhunt',
                                   buffered=True)
 cursor = db_init.cursor()
+cursor.execute("select max(puzzleid) from puzzles")
+last_q = int(cursor.fetchall()[0][0])
 cursor.execute("update players set islogged = 0")
 db_init.commit()
 db_init.close()
@@ -161,12 +163,14 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
             
             - send -
             EE - invalid email
+            EF - email send failed
             ER - already registered
             EO - wrong otp code
             EX - otp expired
             E1 - already logged in 
             ET - wrong token
             EN - not registered
+            EH - already logged once
             
             SL:QN - successful login: question number
             SR - successful registration
@@ -208,12 +212,18 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
                     if len(data) == 0:  # for when the player is not registered
                         _cursor.execute("insert into players (email) values (%s)",
                                         (email,))
-                        send_reg_mail(False, email, otp)
-                        send(conn, 'SR')
+                        try:
+                            send_reg_mail(False, email, otp)
+                            send(conn, 'SR')
+                        except Exception as e:
+                            send(conn, 'EF')
 
                     else:  # for when the player is already registered
-                        send_reg_mail(True, email, otp)
-                        send(conn, 'ER')
+                        try:
+                            send_reg_mail(True, email, otp)
+                            send(conn, 'ER')
+                        except Exception as e:
+                            send(conn, 'EF')
 
             elif data[0] == 'G':
                 split_data = data[1:].split(':', 1)
@@ -240,6 +250,9 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
                 _cursor.execute("select id, puzzleid, pass_hash, islogged from players where email = %s",
                                 (split_data[0],))
                 db_data = _cursor.fetchall()
+
+                if db_id is not None:
+                    send(conn, 'EH')
 
                 if len(db_data) == 0:
                     send(conn, 'EN')
@@ -329,6 +342,32 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
                             continue
 
                         send_file(conn, "assets/Q{}/image.png".format(q_n), SIZE)
+
+                    except FileNotFoundError:
+                        send(conn, 'EB')
+
+                elif split_data[1] == 'V':
+                    try:
+                        send(conn, 'RV')
+                        response = conn.recv(SIZE).decode()
+
+                        if response != 'SV':
+                            continue
+
+                        send_file(conn, "assets/Q{}/video.mp4".format(q_n), SIZE)
+
+                    except FileNotFoundError:
+                        send(conn, 'EB')
+
+                elif split_data[1] == 'A':
+                    try:
+                        send(conn, 'RA')
+                        response = conn.recv(SIZE).decode()
+
+                        if response != 'SA':
+                            continue
+
+                        send_file(conn, "assets/Q{}/audio.mp3".format(q_n), SIZE)
 
                     except FileNotFoundError:
                         send(conn, 'EB')
