@@ -178,6 +178,7 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
             
             --- scavenging and resource download ---
             - receive -
+            C - request puzzle count
             P followed by sessionid:puzzleid:latitude:longitude - submits answer to the puzzle - implemented
             N*:P - request *th puzzle's:attributes
             N*:T - request puzzle title and text
@@ -187,7 +188,7 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
             
             - send -
             EP - puzzle mismatch - implemented
-            EI - not signed in to download
+            EI - not signed in to download/ make that request
             EB - bad request
             EA - wrong location/answer - implemented
             
@@ -374,6 +375,15 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
 
                 else:
                     send(conn, 'X')
+
+            elif data[0] == 'C':
+                if session_id is None:
+                    send(conn, 'EI')
+                    continue
+                else:
+                    _cursor.execute("select count(puzzleid) from puzzles")
+                    db_data = _cursor.fetchall()
+                    send(conn, 'C:{}'.format(db_data[0][0]))
 
             else:
                 send(conn, 'X')
