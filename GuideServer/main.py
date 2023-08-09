@@ -269,9 +269,11 @@ def connection_thread(conn: ssl.SSLSocket, thread_ind: int):
                         send(conn, "E1")
                     else:
                         _cursor.execute("update players set islogged = 1 where id = %s", (db_data[0][0],))
+                        _cursor.execute("select max(puzzleid) from puzzles")
+                        count = _cursor.fetchall()[0][0]
 
                         session_id = split_data[1]
-                        send(conn, "SL:{}".format(db_data[0][1]))
+                        send(conn, "SL:{}:{}".format(db_data[0][1], count))
                         db_id = db_data[0][0]
                         last_q = db_data[0][1]
                 else:

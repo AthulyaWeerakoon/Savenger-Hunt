@@ -11,12 +11,12 @@ class FirstPage extends StatefulWidget {
   const FirstPage({super.key, required this.session});
 
   @override
-  State<FirstPage> createState() => _SignupPage();
+  State<FirstPage> createState() => _FirstPage();
 }
 
 
 
-class _SignupPage extends State<FirstPage> {
+class _FirstPage extends State<FirstPage> {
   late StreamSubscription subscription;
 
   void toSignup(bool forcedWait) {
@@ -32,7 +32,6 @@ class _SignupPage extends State<FirstPage> {
 
   @override
   void initState() {
-
     widget.session.getKeyRetreived().then((bool value){
       if (!value){
         Future.delayed(const Duration(seconds: 3));
@@ -63,7 +62,9 @@ class _SignupPage extends State<FirstPage> {
                 }
                 else if(recv.startsWith('SL')){
                   // toask Logged in successfully
-                  widget.session.setLastQ(int.parse(recv.split(":")[1]));
+                  widget.session.setLastQ(int.parse(recv.split(":")[1])).then((value) => {
+                    widget.session.setTotalQ(int.parse(recv.split(":")[2]))
+                  });
                   Navigator.of(context).push(routeToNavigation(widget.session));
                 }
                 else{

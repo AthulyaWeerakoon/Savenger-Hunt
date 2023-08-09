@@ -91,7 +91,9 @@ class _SignupPage extends State<SignupPage> {
           }
           else if(recv.startsWith('SL')){
             // toask Logged in successfully
-            widget.session.setLastQ(int.parse(recv.split(":")[1]));
+            widget.session.setLastQ(int.parse(recv.split(":")[1])).then((value) => {
+              widget.session.setTotalQ(int.parse(recv.split(":")[2]))
+            });
             Navigator.of(context).push(routeToNavigation(widget.session));
           }
           else{

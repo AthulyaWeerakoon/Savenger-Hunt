@@ -14,10 +14,17 @@ class NavigationPage extends StatefulWidget {
 
 class _NavigationPage extends State<NavigationPage> {
   int tabState = 1;
+  int totalQ = 0;
   
   @override
   void initState() {
     super.initState();
+
+    widget.session.getTotalQ().then((value) { 
+      setState(() {
+        totalQ = value;
+      });
+    });
   }
 
   @override
@@ -43,9 +50,9 @@ class _NavigationPage extends State<NavigationPage> {
     });
   }
 
-  List<Widget> quizCountList(int n){
+  List<Widget> quizCountList(){
     List<Widget> returnList = List.empty(growable: true);
-    for(int i = 1; i <= n; i++){
+    for(int i = 1; i <= totalQ; i++){
       returnList.add(
         Container(
           padding: const EdgeInsets.all(8),
@@ -156,7 +163,7 @@ class _NavigationPage extends State<NavigationPage> {
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
                     crossAxisCount: 5,
-                    children: quizCountList(105)
+                    children: quizCountList()
                   ),
                 ),
               ],
@@ -187,71 +194,78 @@ class _NavigationPage extends State<NavigationPage> {
           SizedBox(
             width: double.infinity,
             height: 50.0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: GestureDetector(
-                    onTap: () => setTab(0),
-                    child: Container(
-                      height: 50.0,
-                      decoration: BoxDecoration(
-                        color: fromState(false, 0),
-                        border: Border(
-                          left:BorderSide(
-                            width: 0.0, 
-                            color: fromState(false, 0))
+            child: AnimatedSwitcher(
+              duration: const Duration(microseconds: 500),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                key: ValueKey<int>(tabState),
+                children: [
+                  Expanded(
+                    flex: 1,
+                    child: GestureDetector(
+                      onTap: () => setTab(0),
+                      child: Container(
+                        height: 50.0,
+                        decoration: BoxDecoration(
+                          color: fromState(false, 0),
+                          border: Border(
+                            left:BorderSide(
+                              width: 0.0, 
+                              color: fromState(false, 0))
+                          ),
                         ),
+                        child: Icon(
+                          Icons.notifications,
+                          color: fromState(true, 0),)
                       ),
-                      child: Icon(
-                        Icons.notifications,
-                        color: fromState(true, 0),)
-                    ),
-                  )
-                ),
-                Expanded(
-                  flex: 1,
-                  child: GestureDetector(
-                    onTap: () => setTab(1),
-                    child: Container(
-                      height: 50.0,
-                      decoration: BoxDecoration(
-                        color: fromState(false, 1),
-                        border: Border(
-                          left:BorderSide(
-                            width: 0.0, 
-                            color: fromState(false, 1))
+                    )
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: GestureDetector(
+                      onTap: () => setTab(1),
+                      child: Container(
+                        height: 50.0,
+                        decoration: BoxDecoration(
+                          color: fromState(false, 1),
+                          border: Border(
+                            left:BorderSide(
+                              width: 0.0, 
+                              color: fromState(false, 1))
+                          ),
                         ),
+                        child: Icon(
+                          Icons.home,
+                          color: fromState(true, 1),)
                       ),
-                      child: Icon(
-                        Icons.home,
-                        color: fromState(true, 1),)
-                    ),
-                  )
-                ),
-                Expanded(
-                  flex: 1,
-                  child: GestureDetector(
-                    onTap: () => setTab(2),
-                    child: Container(
-                      height: 50.0,
-                      decoration: BoxDecoration(
-                        color: fromState(false, 2),
-                        border: Border(
-                          left:BorderSide(
-                            width: 0.0, 
-                            color: fromState(false, 2))
+                    )
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: GestureDetector(
+                      onTap: () => setTab(2),
+                      child: Container(
+                        height: 50.0,
+                        decoration: BoxDecoration(
+                          color: fromState(false, 2),
+                          border: Border(
+                            left:BorderSide(
+                              width: 0.0, 
+                              color: fromState(false, 2))
+                          ),
                         ),
+                        child: Icon(
+                          Icons.leaderboard,
+                          color: fromState(true, 2),
+                        )
                       ),
-                      child: Icon(
-                        Icons.leaderboard,
-                        color: fromState(true, 2),
-                      )
-                    ),
-                  )
-                ),
-              ]
+                    )
+                  ),
+                ]
+              ),
             ),
           ),
         ],

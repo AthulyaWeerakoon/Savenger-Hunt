@@ -31,21 +31,15 @@ class SessionConnection {
     //}
   }
 
-  Future<String> get _localPath async {
+  Future<String> get localPath async {
     Directory directory = await getApplicationDocumentsDirectory();
     
     return directory.path;
   }
 
   Future<File> get _localFile async {
-    final path = await _localPath;
+    final path = await localPath;
     return File('$path/user_data.txt');
-  }
-
-  Future<File> writeFile(String data) async {
-    final file = await _localFile;
-
-    return file.writeAsString(data);
   }
 
   Future<List<String>> get _fileData async {
@@ -56,7 +50,7 @@ class SessionConnection {
       return contents.split(' ');
     } catch(e) {
       file.writeAsString(
-        'mail: key: lastQ: '
+        'mail: key: lastQ: totalQ: '
         );
       return _fileData;
     }
@@ -113,8 +107,28 @@ class SessionConnection {
 
     final List<String> splitString = contents.split('lastQ:');
     final String postQsplit = splitString[1].split(' ')[1];
+    print("${splitString[0]}lastQ:$lastQ $postQsplit");
 
     return await file.writeAsString("${splitString[0]}lastQ:$lastQ $postQsplit");
+  }
+
+  Future<int> getTotalQ() async {
+    final file = await _localFile;
+    final contents = await file.readAsString();
+
+    final List<String> isolatedData = contents.split(' ');
+    return int.parse(isolatedData[3].split(':')[1]);
+  }
+
+  Future<File> setTotalQ(int totalQ) async {
+    final file = await _localFile;
+    final contents = await file.readAsString();
+    print(contents);
+
+    final List<String> splitString = contents.split('totalQ:');
+    print("${splitString[0]}totalQ:$totalQ");
+
+    return await file.writeAsString("${splitString[0]}totalQ:$totalQ");
   }
 
   Future<bool> getKeyRetreived() async {
