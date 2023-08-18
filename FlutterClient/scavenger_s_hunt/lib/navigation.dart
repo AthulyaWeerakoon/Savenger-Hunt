@@ -139,6 +139,7 @@ class _NavigationPage extends State<NavigationPage> {
   Widget pagePush(){
     if (tabState == 0){
       return Center(
+        key: ValueKey<int>(tabState),
         child: Image.asset(
           "assets/ui/startup_img.png",
           height: 100,
@@ -147,7 +148,8 @@ class _NavigationPage extends State<NavigationPage> {
       );
     }
     else if(tabState == 1){
-      return Expanded(
+      return SizedBox(
+      key: ValueKey<int>(tabState),
       child: Padding(
         padding: const EdgeInsets.all(15.0),
           child: Container(
@@ -174,6 +176,7 @@ class _NavigationPage extends State<NavigationPage> {
     }
     else{
       return Center(
+        key: ValueKey<int>(tabState),
         child: Image.asset(
           "assets/ui/startup_img.png",
           height: 100,
@@ -190,12 +193,18 @@ class _NavigationPage extends State<NavigationPage> {
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          pagePush(),
+          AnimatedSwitcher(
+              duration: const Duration(milliseconds: 100),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              child: pagePush(),
+          ),
           SizedBox(
             width: double.infinity,
             height: 50.0,
             child: AnimatedSwitcher(
-              duration: const Duration(microseconds: 500),
+              duration: const Duration(milliseconds: 100),
               transitionBuilder: (Widget child, Animation<double> animation) {
                 return FadeTransition(opacity: animation, child: child);
               },

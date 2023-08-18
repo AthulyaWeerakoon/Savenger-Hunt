@@ -23,6 +23,7 @@ class _PuzzlePage extends State<PuzzlePage> {
   String attributes = "";
   final List<bool> isLoaded = List.from([false, false, false, false]);
   final List<File> tivaFiles = List.from([null, null, null, null]);
+  late String quizTitle;
 
   @override
   void initState() {
@@ -74,17 +75,42 @@ class _PuzzlePage extends State<PuzzlePage> {
 
   Future<bool> loadLocal() async {
     String path = await widget.session.localPath;
+    final qpath = "$path/Q${widget.quizInt}/";
     if(attributes.contains('T')){
-      
+      var textPath = "${qpath}text.txt";
+      if(await Link(textPath).exists()){
+        tivaFiles[0] = File(textPath);
+        setState(() {
+          isLoaded[0] = true;
+        });
+      }
     }
     if(attributes.contains('I')){
-      
+      var imagePath = "${qpath}image.png";
+      if(await Link(imagePath).exists()){
+        tivaFiles[1] = File(imagePath);
+        setState(() {
+          isLoaded[1] = true;
+        });
+      }
     }
     if(attributes.contains('V')){
-      
+      var videoPath = "${qpath}video.wmv";
+      if(await Link(videoPath).exists()){
+        tivaFiles[2] = File(videoPath);
+        setState(() {
+          isLoaded[2] = true;
+        });
+      }
     }
     if(attributes.contains('A')){
-      
+      var audioPath = "${qpath}audio.mp3";
+      if(await Link(audioPath).exists()){
+        tivaFiles[3] = File(audioPath);
+        setState(() {
+          isLoaded[3] = true;
+        });
+      }
     }
 
     return false;
